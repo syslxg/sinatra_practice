@@ -1,6 +1,13 @@
 require 'sinatra/base'
+require 'ddtrace/auto_instrument'
+
+Datadog.configure do |c|
+end
+
 
 class SinatraPracticeApp < Sinatra::Base
+  register Datadog::Tracing::Contrib::Sinatra::Tracer
+
   get "/" do
       erb :"blogs/new"
   end
