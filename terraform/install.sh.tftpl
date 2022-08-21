@@ -13,3 +13,8 @@ cd /var
 git clone https://github.com/syslxg/sinatra_practice.git
 cd sinatra_practice
 bundle
+
+export DATABASE_URL=${db_url}
+export RACK_ENV=production
+rake db:migrate
+rackup --host 0.0.0.0 --port 80

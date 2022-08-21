@@ -48,9 +48,9 @@ resource "google_compute_firewall" "ssh" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-data "template_file" "group-startup-script" {
-  template = file("install.sh")
-}
+#data "template_file" "group-startup-script" {
+#  template = file("install.sh")
+#}
 
 module "mig_template" {
   source_image_project = "ubuntu-os-cloud"
@@ -64,7 +64,12 @@ module "mig_template" {
     scopes = ["cloud-platform"]
   }
   name_prefix    = var.network_name
-  startup_script = data.template_file.group-startup-script.rendered
+#  provisioner "file" {
+#    content = 
+#    destination = "/tmp/install.sh"
+#  }
+
+  startup_script = templatefile("install.sh.tftpl", {db_url="postgres://demo:${random_id.dbpassword.hex}@${google_sql_database_instance.db.ip_address.0.ip_address}"})
   tags = [
     var.network_name,
     "ssh"
