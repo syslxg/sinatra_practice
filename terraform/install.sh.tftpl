@@ -9,12 +9,17 @@ apt-get install -y \
   curl git zlib1g zlib1g-dev libssl-dev libyaml-dev \
   libxml2-dev autoconf libc6-dev libncurses-dev automake libtool libpq-dev
 
+DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${dd_api_key} DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+
 cd /var
 git clone https://github.com/syslxg/sinatra_practice.git
 cd sinatra_practice
 bundle
 
+cat > /var/sinatra_practice/start.sh <<EOF
 export DATABASE_URL=${db_url}
 export RACK_ENV=production
 rake db:migrate
 rackup --host 0.0.0.0 --port 80
+EOF
+
