@@ -2,24 +2,53 @@
 
 # introducing sleep so network interfaces and routes can get ready before fetching software
 sleep 10
+
+if [ -f /etc/systemd/system/puma.service ]; then
+  exit 0
+fi
+
 apt-get update
 apt-get install -y \
-  ruby ruby-dev ruby-bundler \
+  ruby ruby-dev ruby-bundler nginx \
   build-essential bison openssl libreadline-dev \
   curl git zlib1g zlib1g-dev libssl-dev libyaml-dev \
   libxml2-dev autoconf libc6-dev libncurses-dev automake libtool libpq-dev
 
 DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${dd_api_key} DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
 
+cat > /etc/nginx/sites-available/default <<EOF
+server {
+  listen 80;
+  location / {
+    proxy_pass http://localhost:9292/;
+  }
+}
+EOF
+
+useradd demo
 cd /var
 git clone https://github.com/syslxg/sinatra_practice.git
 cd sinatra_practice
 bundle
+DATABASE_URL=${db_url} RACK_ENV=production rake db:migrate
+chown -R demo:demo /var/sinatra_practice
 
-cat > /var/sinatra_practice/start.sh <<EOF
-export DATABASE_URL=${db_url}
-export RACK_ENV=production
-rake db:migrate
-rackup --host 0.0.0.0 --port 80
+cat > /etc/systemd/system/puma.service <<EOF
+[Unit]
+Description=Puma HTTP Server
+After=network.target
+[Service]
+Type=notify
+WatchdogSec=10
+User=demo
+WorkingDirectory=/var/sinatra_practice 
+ExecStart=/usr/local/bin/puma -b tcp://127.0.0.1:9292
+Environment="DATABASE_URL=${db_url}" RACK_ENV=production
+Restart=always
+[Install]
+WantedBy=multi-user.target
 EOF
 
+systemctl daemon-reload
+systemctl enable puma.service
+systemctl start puma.service
