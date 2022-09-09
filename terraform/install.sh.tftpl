@@ -8,7 +8,7 @@ if [ -f /etc/systemd/system/puma.service ]; then
 fi
 
 apt-get update
-apt-get install -y \
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
   ruby ruby-dev ruby-bundler nginx \
   build-essential bison openssl libreadline-dev \
   curl git zlib1g zlib1g-dev libssl-dev libyaml-dev \
